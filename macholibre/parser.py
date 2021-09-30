@@ -19,7 +19,6 @@ import hashlib
 
 from collections import Counter
 from datetime import datetime
-from json import dump
 from math import exp, log
 from os import SEEK_END
 from re import split
@@ -30,7 +29,7 @@ from asn1crypto.cms import ContentInfo
 from asn1crypto.x509 import DirectoryString
 from plistlib import loads
 
-import macholibre.dictionary as dictionary
+import dictionary as dictionary
 
 
 class Parser():
@@ -1591,6 +1590,8 @@ class Parser():
 
         flags = self.parse_macho_flags(flags)
 
+        self.__macho['endianness'] = 'little' if self.__is_little_endian else 'big'
+        self.__macho['word'] = '64' if self.__is_64_bit else '32'
         self.__macho['cputype'] = cputype
         self.__macho['subtype'] = subtype
         self.__macho['filetype'] = filetype
@@ -1660,6 +1661,10 @@ class Parser():
             self.__file.seek(prev)
 
             self.__output['universal']['machos'].append(self.__macho.copy())
+            self.__macho['filetype'] = 'UNIVERSAL FAT BINARY'
+            self.__output['endianness'] = 'big'
+            self.__output['word'] = None
+
             self.__macho.clear()
 
     def parse_file(self):
@@ -1668,15 +1673,7 @@ class Parser():
         """
 
         contents = self.__file.read()
-
         self.__output['size'] = len(contents)
-
-        self.__output['hashes'] = {
-            'md5': hashlib.md5(contents).hexdigest(),
-            'sha1': hashlib.sha1(contents).hexdigest(),
-            'sha256': hashlib.sha256(contents).hexdigest()
-        }
-
         self.__file.seek(0)  # return to beginning of file
 
         if self.__file.read(4) == b'\xca\xfe\xba\xbe':
@@ -1685,16 +1682,11 @@ class Parser():
             self.parse_macho(0, self.__output['size'])
             self.__output['macho'] = self.__macho
 
-    def parse(self, certs: bool=False, out=None):
-        """Parse Mach-O file at given path, and either return a dict
-        or write output to provided file.
+    def parse(self, certs: bool = False):
+        """Parse Mach-O file at given path and return a dict
         """
 
         self.__extract_certs = certs
-
         self.parse_file()
+        return self.__output
 
-        if out is None:
-            return self.__output
-
-        dump(self.__output, out)

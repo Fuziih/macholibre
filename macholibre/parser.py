@@ -29,7 +29,7 @@ from asn1crypto.cms import ContentInfo
 from asn1crypto.x509 import DirectoryString
 from plistlib import loads
 
-import dictionary as dictionary
+import macholibre.dictionary as dictionary
 
 
 class Parser():

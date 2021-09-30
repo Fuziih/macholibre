@@ -23,6 +23,7 @@ from json import dump, dumps
 
 from macholibre.parser import Parser
 
+__version__ = "1.1.0"
 
 def output_file(out):
     """Convert file path to writeable file object."""
